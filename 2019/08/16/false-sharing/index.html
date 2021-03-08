@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"stonecj.cn","root":"/","images":"/images","scheme":"Muse","version":"8.2.2","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":false,"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"بحث...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="引言当代计算机存储体系，基本构成磁盘、内存、cpu高速缓存、cpu寄存器。 以cpu为例： ​        现代cpu都是多核cpu，cpu一般有3级缓存。其中二级缓存是专用的，多核处理器中，每个内核独享L2 cache；三级缓存则是高层级的缓存，它被所有内核共享。 什么是伪共享​        伪共享主要发生在L2 cache。内核独享L2，为了保证不同内核L2数据的一致性，缓存机制会强制刷新">
+<meta property="og:type" content="article">
+<meta property="og:title" content="【false sharing】伪共享">
+<meta property="og:url" content="http://stonecj.cn/2019/08/16/false-sharing/index.html">
+<meta property="og:site_name" content="shield‘s blog">
+<meta property="og:description" content="引言当代计算机存储体系，基本构成磁盘、内存、cpu高速缓存、cpu寄存器。 以cpu为例： ​        现代cpu都是多核cpu，cpu一般有3级缓存。其中二级缓存是专用的，多核处理器中，每个内核独享L2 cache；三级缓存则是高层级的缓存，它被所有内核共享。 什么是伪共享​        伪共享主要发生在L2 cache。内核独享L2，为了保证不同内核L2数据的一致性，缓存机制会强制刷新">
+<meta property="og:locale">
+<meta property="article:published_time" content="2019-08-16T09:05:38.000Z">
+<meta property="article:modified_time" content="2019-08-16T10:30:32.000Z">
+<meta property="article:author" content="shield">
+<meta property="article:tag" content="cpu">
+<meta property="article:tag" content="cache">
+<meta property="article:tag" content="缓存">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://stonecj.cn/2019/08/16/false-sharing/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-Hans'
+  };
+</script>
+<title>【false sharing】伪共享 | shield‘s blog</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="تشغيل شريط التصفح" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">shield‘s blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          المحتويات
+        </li>
+        <li class="sidebar-nav-overview">
+          عام
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%95%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">引言</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E4%BC%AA%E5%85%B1%E4%BA%AB"><span class="nav-number">2.</span> <span class="nav-text">什么是伪共享</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A1%88%E4%BE%8B"><span class="nav-number">3.</span> <span class="nav-text">案例</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">shield</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">48</span>
+          <span class="site-state-item-name">المقالات</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">الوسوم</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://stonecj.cn/2019/08/16/false-sharing/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="shield">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="shield‘s blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          【false sharing】伪共享
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">نُشر في</span>
+      
+
+      <time title="أُنشأ: 2019-08-16 17:05:38 / عُدل: 18:30:32" itemprop="dateCreated datePublished" datetime="2019-08-16T17:05:38+08:00">2019-08-16</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h3 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h3><p>当代计算机存储体系，基本构成磁盘、内存、cpu高速缓存、cpu寄存器。</p>
+<p>以cpu为例：</p>
+<p>​        现代cpu都是多核cpu，cpu一般有3级缓存。其中二级缓存是专用的，多核处理器中，每个内核独享L2 cache；三级缓存则是高层级的缓存，它被所有内核共享。</p>
+<h3 id="什么是伪共享"><a href="#什么是伪共享" class="headerlink" title="什么是伪共享"></a>什么是伪共享</h3><p>​        伪共享主要发生在L2 cache。内核独享L2，为了保证不同内核L2数据的一致性，缓存机制会强制刷新已更改的L2。</p>
+<p>​        一个数据被修改就会触发L2同步，这很直观，看起来也毫无破绽。不过，考虑到内存块设计，事情就不会这么简单了。内存通常被划分为2的4、8、16等次方KB 或者 MB大小（小批量的读写，可以兼顾吞吐量和实时性）。</p>
+<p>​        一旦触发L2同步，那么整个内存块上的数据都会被强制重载。那些即使不曾发生变化的数据，也会被重载。</p>
+<h3 id="案例"><a href="#案例" class="headerlink" title="案例"></a>案例</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">foo</span> &#123;</span></span><br><span class="line">    <span class="keyword">int</span> x;</span><br><span class="line">    <span class="keyword">int</span> y; </span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">foo</span> <span class="title">f</span>;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* The two following functions are running concurrently: */</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">sum_a</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> s = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">1000000</span>; ++i)</span><br><span class="line">        s += f.x;</span><br><span class="line">    <span class="keyword">return</span> s;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">inc_b</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">1000000</span>; ++i)</span><br><span class="line">        ++f.y;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>(不同内核，同时执行上面方法)</p>
+<p>这里x,y会出现在L2同一内存块，x值一直不变，但是由于y发生改变。sum_a必须不断的从主内存加载x。</p>
+<p>ps:</p>
+<p>java代码中，一般只关注对并发修改字段的处理（加锁）。就算写到这里，我也还没想好怎么应用到自己的代码中去。if you can do, plealse mail to me.  Ths！</p>
+<p>ps2:</p>
+<p>神奇的解决方法 — 内存块补全。x放入内存后，塞点无用数据，是内存块不能再加载y。</p>
+<p>参考：</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/cpu/" rel="tag"># cpu</a>
+              <a href="/tags/cache/" rel="tag"># cache</a>
+              <a href="/tags/%E7%BC%93%E5%AD%98/" rel="tag"># 缓存</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2019/07/15/kudu%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E5%A4%84%E7%90%86/" rel="prev" title="kudu常见问题处理">
+                  <i class="fa fa-chevron-left"></i> kudu常见问题处理
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2019/09/02/%E5%89%96%E6%9E%90disruptor-writing-to-the-ring-buffer/" rel="next" title="剖析disruptor: writing to the ring buffer">
+                  剖析disruptor: writing to the ring buffer <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">shield</span>
+</div>
+  <div class="powered-by">تطبيق الموقع <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

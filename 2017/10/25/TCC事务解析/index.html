@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"stonecj.cn","root":"/","images":"/images","scheme":"Muse","version":"8.2.2","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":false,"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"بحث...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="1、场景说明 背景：  ​    分布式环境下，为保证事务一致性，通常采用两种算法：  二阶段提交  实现方式 锁定资源   - （确认占用 or 撤销占用） try   -    （confirm     or    cancel） 加锁A&#x2F;预操作A    -    加锁B&#x2F;预操作B（确认A、B均能正确执行）   -     提交（确认   or   取消）A&#x2F;B操作    -    释放锁A&#x2F;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="TCC事务解析">
+<meta property="og:url" content="http://stonecj.cn/2017/10/25/TCC%E4%BA%8B%E5%8A%A1%E8%A7%A3%E6%9E%90/index.html">
+<meta property="og:site_name" content="shield‘s blog">
+<meta property="og:description" content="1、场景说明 背景：  ​    分布式环境下，为保证事务一致性，通常采用两种算法：  二阶段提交  实现方式 锁定资源   - （确认占用 or 撤销占用） try   -    （confirm     or    cancel） 加锁A&#x2F;预操作A    -    加锁B&#x2F;预操作B（确认A、B均能正确执行）   -     提交（确认   or   取消）A&#x2F;B操作    -    释放锁A&#x2F;">
+<meta property="og:locale">
+<meta property="article:published_time" content="2017-10-25T15:29:52.000Z">
+<meta property="article:modified_time" content="2019-05-15T16:13:34.000Z">
+<meta property="article:author" content="shield">
+<meta property="article:tag" content="TCC">
+<meta property="article:tag" content="事务">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://stonecj.cn/2017/10/25/TCC%E4%BA%8B%E5%8A%A1%E8%A7%A3%E6%9E%90/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-Hans'
+  };
+</script>
+<title>TCC事务解析 | shield‘s blog</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="تشغيل شريط التصفح" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">shield‘s blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          المحتويات
+        </li>
+        <li class="sidebar-nav-overview">
+          عام
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1%E3%80%81%E5%9C%BA%E6%99%AF%E8%AF%B4%E6%98%8E"><span class="nav-number">1.</span> <span class="nav-text">1、场景说明</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2%E3%80%81TCC%E5%AE%9E%E6%88%98"><span class="nav-number">2.</span> <span class="nav-text">2、TCC实战</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">shield</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">48</span>
+          <span class="site-state-item-name">المقالات</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">الوسوم</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://stonecj.cn/2017/10/25/TCC%E4%BA%8B%E5%8A%A1%E8%A7%A3%E6%9E%90/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="shield">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="shield‘s blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          TCC事务解析
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">نُشر في</span>
+
+      <time title="أُنشأ: 2017-10-25 23:29:52" itemprop="dateCreated datePublished" datetime="2017-10-25T23:29:52+08:00">2017-10-25</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">عُدل في</span>
+        <time title="عُدل: 2019-05-16 00:13:34" itemprop="dateModified" datetime="2019-05-16T00:13:34+08:00">2019-05-16</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="1、场景说明"><a href="#1、场景说明" class="headerlink" title="1、场景说明"></a>1、场景说明</h2><p> 背景：</p>
+<p> ​    分布式环境下，为保证事务一致性，通常采用两种算法：</p>
+<ol>
+<li><p>二阶段提交</p>
+<ul>
+<li>实现方式<ul>
+<li>锁定资源   - （确认占用 or 撤销占用）</li>
+<li>try   -    （confirm     or    cancel）</li>
+<li>加锁A/预操作A    -    加锁B/预操作B（确认A、B均能正确执行）   -     提交（确认   or   取消）A/B操作    -    释放锁A/B</li>
+</ul>
+</li>
+<li>存在问题（TCC为例）<ul>
+<li>不能保证confirm、cancel一定都成功<ul>
+<li>需要补偿机制</li>
+</ul>
+</li>
+<li>try阶段占用资源粒度不能过大，否则影响性能<ul>
+<li>依业务而定，一般都可以缩小粒度到people 或者 product</li>
+<li><em>上面这条可以无视，我觉着程序员没有傻子</em> </li>
+</ul>
+</li>
+<li>try阶段占用资源。如果不能及时confirm or cancel，会影响一致性。<ul>
+<li>依业务而定，评估业务链条时间消耗，给出超时时间、补偿触发时间</li>
+<li>过早触发补偿，导致任务进行中就被撤销，业务成功率低。</li>
+<li>过晚触发补偿，导致资源长期占用，数据不一致。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>三阶段提交</p>
+<ol>
+<li><p>解决的问题</p>
+<ul>
+<li>二阶段提交，不能保证原子性</li>
+</ul>
+</li>
+<li><p>实现方式</p>
+<ul>
+<li><p>一阶段：</p>
+<ul>
+<li>发送消息到参与者</li>
+<li>确认是否能执行（一般为资源申请）<ul>
+<li>是：进入阶段二</li>
+<li>否：中断操作</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>二阶段</p>
+<ul>
+<li>发送消息到参与者</li>
+<li>预执行，记录undo,redo日志</li>
+<li>异常：参与者接不到协调者请求<ul>
+<li><em>引发协调者超时</em></li>
+</ul>
+</li>
+<li>异常-协调者超时：协调者接不到ACK响应，或者未全部接到<ul>
+<li>发送abort给参与者</li>
+<li>中断事务</li>
+</ul>
+</li>
+</ul>
+<!--至此，由于协调者的超时机制的存在-->
+
+<p>​    <!--保证了二阶段结束时,--></p>
+<p>​    <!--要么接到所有参与者反馈，进入三阶段--></p>
+<p>​    <!--要么触发协调者超时，发送abort请求--></p>
+</li>
+<li><p>三阶段</p>
+<ul>
+<li><p>提交事务</p>
+<ul>
+<li>参与者收到信号，提交</li>
+<li>==参与者未收到信号==，超时自动提交</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>存在问题：</p>
+<ol>
+<li><p>确认提交时，协调者宣布abort，但是参与者未收到</p>
+<ul>
+<li>二阶段提交中，导致事务状态暂停———解决——记录协调者对事务的处理状态，做补偿机制</li>
+<li>三阶段提交中，导致参与者错误的提交请求———-解决——–同上———-</li>
+</ul>
+</li>
+<li><p>协调者故障</p>
+<ul>
+<li>协调者集群</li>
+<li>频繁失败，检测自身与各参与者网络连通性。从而将问题机器下线</li>
+</ul>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+<h2 id="2、TCC实战"><a href="#2、TCC实战" class="headerlink" title="2、TCC实战"></a>2、TCC实战</h2><ol>
+<li>常见流程<ol>
+<li>发起事务T，记录GLOBAL  ID</li>
+<li>调用服务A try，为服务A创建子事务，加入事务T</li>
+<li>调用服务B try，为服务B创建子事务，加入事务T</li>
+<li>根据服务调用结果，判定事务T，宣布confirm 或者cancel</li>
+<li>服务A、B执行T宣布的结果</li>
+</ol>
+</li>
+<li>发起者本地事务<ol>
+<li>远程事务放在本地事务内，本地事务异常时，同步cancel远程事务</li>
+<li>远程事务放在本地事务外，本地事务也当做远程事务处理</li>
+</ol>
+</li>
+<li>事务嵌套与事务传播<ol>
+<li>开启新事务，隔离</li>
+<li>加入原有事务</li>
+</ol>
+</li>
+<li>补偿机制<ol>
+<li>超时时间设置</li>
+<li>补偿次数</li>
+<li>补偿间隔</li>
+<li>防止并发</li>
+</ol>
+</li>
+<li>故障恢复<ol>
+<li>查找未完结事务</li>
+<li>confirm 或者 cancel</li>
+</ol>
+</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/TCC/" rel="tag"># TCC</a>
+              <a href="/tags/%E4%BA%8B%E5%8A%A1/" rel="tag"># 事务</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2017/10/25/%E4%B9%90%E8%A7%82%E9%94%81&%E6%82%B2%E8%A7%82%E9%94%81/" rel="prev" title="乐观锁&悲观锁">
+                  <i class="fa fa-chevron-left"></i> 乐观锁&悲观锁
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2017/11/05/XA%E5%8D%8F%E8%AE%AE/" rel="next" title="XA协议">
+                  XA协议 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">shield</span>
+</div>
+  <div class="powered-by">تطبيق الموقع <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

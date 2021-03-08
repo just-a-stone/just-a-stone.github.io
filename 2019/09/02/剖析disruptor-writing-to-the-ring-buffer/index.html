@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"stonecj.cn","root":"/","images":"/images","scheme":"Muse","version":"8.2.2","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":false,"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"بحث...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="原文地址：http:&#x2F;&#x2F;mechanitis.blogspot.com&#x2F;2011&#x2F;07&#x2F;dissecting-disruptor-writing-to-ring.html（因被墙移到墙内）   作者：Trisha  ​    这是disruptor端到端视图中缺失的部分。撑住，这相当长！ 要点：  无重叠环 通知消费者 批生产 多生产这协作  生产者屏障​     disruptor 源码中有消">
+<meta property="og:type" content="article">
+<meta property="og:title" content="剖析disruptor: writing to the ring buffer">
+<meta property="og:url" content="http://stonecj.cn/2019/09/02/%E5%89%96%E6%9E%90disruptor-writing-to-the-ring-buffer/index.html">
+<meta property="og:site_name" content="shield‘s blog">
+<meta property="og:description" content="原文地址：http:&#x2F;&#x2F;mechanitis.blogspot.com&#x2F;2011&#x2F;07&#x2F;dissecting-disruptor-writing-to-ring.html（因被墙移到墙内）   作者：Trisha  ​    这是disruptor端到端视图中缺失的部分。撑住，这相当长！ 要点：  无重叠环 通知消费者 批生产 多生产这协作  生产者屏障​     disruptor 源码中有消">
+<meta property="og:locale">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/20190902172247.png">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/20190906113228.png">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/20190906181803.png">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/20190907151703.png">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/20190907181000.png">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/20190907182023.png">
+<meta property="article:published_time" content="2019-09-02T08:29:52.000Z">
+<meta property="article:modified_time" content="2019-09-07T11:07:07.000Z">
+<meta property="article:author" content="shield">
+<meta property="article:tag" content="disruptor">
+<meta property="article:tag" content="log4j2">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/20190902172247.png">
+
+
+<link rel="canonical" href="http://stonecj.cn/2019/09/02/%E5%89%96%E6%9E%90disruptor-writing-to-the-ring-buffer/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-Hans'
+  };
+</script>
+<title>剖析disruptor: writing to the ring buffer | shield‘s blog</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="تشغيل شريط التصفح" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">shield‘s blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          المحتويات
+        </li>
+        <li class="sidebar-nav-overview">
+          عام
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%94%9F%E4%BA%A7%E8%80%85%E5%B1%8F%E9%9A%9C"><span class="nav-number">1.</span> <span class="nav-text">生产者屏障</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%94%9F%E4%BA%A7%E8%80%85%E5%B1%8F%E9%9A%9C%E4%BF%9D%E8%AF%81ring-buffer%E4%B8%8D%E9%87%8D%E5%8F%A0"><span class="nav-number">2.</span> <span class="nav-text">生产者屏障保证ring buffer不重叠</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%94%B3%E6%98%8E%E4%B8%8B%E4%B8%80%E4%B8%AA%E6%8F%92%E6%A7%BD"><span class="nav-number">3.</span> <span class="nav-text">申明下一个插槽</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8F%90%E4%BA%A4%E6%96%B0%E5%80%BC"><span class="nav-number">4.</span> <span class="nav-text">提交新值</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%94%9F%E4%BA%A7%E8%80%85%E5%B1%8F%E9%9A%9C%E6%89%B9%E5%A4%84%E7%90%86%EF%BC%88%E5%B9%B6%E5%8F%91%E5%86%99%E5%85%A5%EF%BC%89"><span class="nav-number">5.</span> <span class="nav-text">生产者屏障批处理（并发写入）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A4%9A%E7%94%9F%E4%BA%A7%E8%80%85"><span class="nav-number">6.</span> <span class="nav-text">多生产者</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">shield</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">48</span>
+          <span class="site-state-item-name">المقالات</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">الوسوم</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://stonecj.cn/2019/09/02/%E5%89%96%E6%9E%90disruptor-writing-to-the-ring-buffer/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="shield">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="shield‘s blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          剖析disruptor: writing to the ring buffer
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">نُشر في</span>
+
+      <time title="أُنشأ: 2019-09-02 16:29:52" itemprop="dateCreated datePublished" datetime="2019-09-02T16:29:52+08:00">2019-09-02</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">عُدل في</span>
+        <time title="عُدل: 2019-09-07 19:07:07" itemprop="dateModified" datetime="2019-09-07T19:07:07+08:00">2019-09-07</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <blockquote>
+<p>原文地址：<a target="_blank" rel="noopener" href="http://mechanitis.blogspot.com/2011/07/dissecting-disruptor-writing-to-ring.html%EF%BC%88%E5%9B%A0%E8%A2%AB%E5%A2%99%E7%A7%BB%E5%88%B0%E5%A2%99%E5%86%85%EF%BC%89">http://mechanitis.blogspot.com/2011/07/dissecting-disruptor-writing-to-ring.html（因被墙移到墙内）</a>  </p>
+<p>作者：Trisha</p>
+</blockquote>
+<p>​    这是disruptor端到端视图中缺失的部分。撑住，这相当长！</p>
+<p>要点：</p>
+<ul>
+<li>无重叠环</li>
+<li>通知消费者</li>
+<li>批生产</li>
+<li>多生产这协作</li>
+</ul>
+<h4 id="生产者屏障"><a href="#生产者屏障" class="headerlink" title="生产者屏障"></a>生产者屏障</h4><p>​     <code>disruptor </code>源码中有消费者的接口和帮助类，但是没有生产者接口。因为你只需要了解生产者，而不需要额外的访问。像消费端一样， <code>ring buffer</code> 创建了一个生产者屏障，生产者使用 <code>producer   barrier</code> 写入数据到 <code>ring buffer</code>。</p>
+<p>​    </p>
+<p>​    写入 <code>ring buffer</code> 涉及到两阶段提交。首先，生产者必须申明 <code>ring buffer</code> 中下一个插槽的所有权；之后，当生产者完成对该插槽的写入，它将提交事物到 <code>producer barrier</code> 。</p>
+<p>​    我们先看第一步。“给我 <code>ring buffer</code> 的下一个插槽”，这听起来很简单。确实，从生产者角度来看这确实简单。只需要调用 <code>producer barrier</code> 的 <code>nextEntry()</code> 方法，就会给你返回下一个插槽的实体对象。</p>
+<h4 id="生产者屏障保证ring-buffer不重叠"><a href="#生产者屏障保证ring-buffer不重叠" class="headerlink" title="生产者屏障保证ring buffer不重叠"></a>生产者屏障保证<code>ring buffer</code>不重叠</h4><p>​    表层之下，<code>producer barrier</code> 确认了下一个插槽是啥，并且你是否有权限写入。</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/20190902172247.png"></p>
+<p>​    在上图中，我们假设只有一个生产者写入 <code>ring buffer</code> 。随后，我们会来处理复杂的多生产者模式。</p>
+<p>​    <code>ConsumerTrackingProducerBarrier</code> 持有一系列访问 <code>ring buffer</code> 的消费者。对于我来说，现在看起来有点奇怪。我不想在 <code>producer barrier</code> 关心消费端。不过，这是有原因的。我们不希望队列存在归并关系，我们的消费者有责任知道自己的关心的序列号。所以，如果我们想确认我们没有重叠缓存，我们必须检查消费者的消费位置。</p>
+<p>​    上图中，一个消费者恰巧位于最高序列号12；另一个消费者滞后一些，位于序列号3，可能在执行IO等等。因此，消费者2在赶上消费者1之前，需要消费整个缓冲区长度的消息。</p>
+<p>​    生产者想向 <code>ring buffer</code> 中当前被序列号3占据位置写入数据，因为这个插槽刚好在 <code>ring buffer</code> 当前指针之后。当时 <code>producer barrier</code> 知道它当前并不能写入，因为有一个消费者正在使用它。然后 <code>producer barrier</code> 只能停下来，自旋，等待该消费者让出插槽。</p>
+<h4 id="申明下一个插槽"><a href="#申明下一个插槽" class="headerlink" title="申明下一个插槽"></a>申明下一个插槽</h4><p>​    现在，我们想象一下，消费者2结束那批消息的消费。也许它消费到序列号9的位置（在现实生活中，因为消费者批量消费，往往消费到序列号12的位置。不过，那样的话样例就变得没意思了）</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/20190906113228.png"></p>
+<p>​    上面这张图演示了消费者2更新到序列号9的情形。因为 <code>consumer barrier</code> 在这里没有作用，我省略它。</p>
+<p>​    <code>producer barrier</code> 看到下一个插槽变得可用。它窃取了插槽中的实体对象（我还没有专门讨论过这个实体类。简要的说，它基本就是一个筐，存放任何你想放进 <code>ring buffer</code> 的，携带序列号的东西）。设置实体序列号为下一个值（13），然后返回实体到生产者。生产者就能写入任何它想写入的东西。</p>
+<h4 id="提交新值"><a href="#提交新值" class="headerlink" title="提交新值"></a>提交新值</h4><p>​    两阶段提交的第二阶段，即是提交。    <img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/20190906181803.png"></p>
+<p>​    </p>
+<p>​    绿色插槽代表我们刚更新的序列号13的实体。</p>
+<p>​    当生产者将消息写入实体，它会通知 <code>producer barrier</code> 去提交。</p>
+<p>​    <code>producer barrier</code> 等待 <code>ring buffer</code> 指针捕获我们的位置（在单生产者时，这是毫无意义的。示例：我们知道指针在序列号12位置，没有什么会再写入该序列号。）<code>producer barrier</code> 更新 <code>ring buffer</code> 指针到序列号13。下一步，<code>producer barrier</code> 告诉消费者新消息已经准备好。这依赖于唤醒 <code> consumer barrier</code> 的 <code>wait strategy</code> “醒醒，有事做了”（根据阻塞与否，不同等待策略实现处理方式不同）。</p>
+<p>​    现在消费者1可以消费实体13，消费者2可以 消费13及之前实体。他们愉快的工作着。</p>
+<h4 id="生产者屏障批处理（并发写入）"><a href="#生产者屏障批处理（并发写入）" class="headerlink" title="生产者屏障批处理（并发写入）"></a>生产者屏障批处理（并发写入）</h4><p>​    有趣的是，<code>disruptor</code> 可以处理多个生产者，就像消费者端一样。回想一下，消费者2什么时候执行程序，并发现自己在位置9的？这里 <code>producer barrier</code> 做了一件狡猾的事 - 它知道缓冲区的长度，知道消费最慢的消费者位置。所以，它能知道哪个插槽可用。</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/20190907151703.png"></p>
+<p>​    假使 <code>producer barrier</code> 知道 <code>ring buffer</code> 的指针在位置12，最慢的消费者在位置9。它就能让生产者写入插槽3，4，5，6，7，8。</p>
+<h4 id="多生产者"><a href="#多生产者" class="headerlink" title="多生产者"></a>多生产者</h4><p>​    你是否觉着我已经考虑完了？实际上这里还有更多。</p>
+<p>​    上面图中我略有撒谎。我暗示 <code>producer barrier</code> 使用的序列号，直接来源于 <code>ring buffer</code> 的指针。然而，如果查看代码，你会发现它使用 <code>claim strategy</code> 来获取序列号。我跳过这里以简化图形，因为它在单生产者中并不重要。 </p>
+<p>​    在多生产者中，你需要另一个组件来跟踪可以写入的序列号。注意，这不是 <code>ring buffer</code> 指针➕1那么简单 - 如果你不仅有一个生产者，有些实体可能正在北写入，且没有被提交。</p>
+<p>​    让我们重温申明一个插槽。每一个生产者询问 <code>claim strategy</code> 下一个可用插槽。就像上面单生产者一样，生产者1拿到了序列号13。即使 <code>ring buffer</code> 指针任然指向12，生产者2会拿到序列号14。因为 <code>claim sequence</code> 跟踪已经被分配的序列号。</p>
+<p>​    所以，每个生产者拿到它独占的插槽和崭新的序列号。</p>
+<p>​    我把生产者1和它的插槽标记为绿色；生产者2和它的插槽标记为可疑的粉色。</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/20190907181000.png"></p>
+<p>​    现在，想象一下生产者1脱离了掌控，处于某种原因未曾提交。生产者2已经准备好提交，询问 <code>producer barrier</code> 是否可以提交。</p>
+<p>​    之前提交图中所示，<code>producer barrier</code> 只有当<code>ring buffer</code> 的指针到达想要提交的插槽后方时，它才会提交。在这个案例中，指针抵达13，我们才能提交14。因为生产者1盯着某些闪光的东西没有提交，我们不能提交14。所以 <code>claim strategy</code> 等在那里直到 <code>ring buffer</code> 指针到达指定位置。</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/20190907182023.png"></p>
+<p>​    现在生产者1从昏迷中醒来，提交实例13。<code>producer barrier</code> 告诉 <code>claim stratey</code> <code>ring buffer</code> 指针要在12位置。然后 <code>ring buffer</code> 指针增长到13，<code>producer barrier</code> 通知 <code>wait strategy</code> 让消费者们知道 <code>ring buffer</code> 已经更新。此时，<code>producer barrier</code> 才能结束生产者2的请求，<code>ring buffer</code> 指针增长到14，通知所有消费者我们已经更新。</p>
+<p>​    你可以发现，就算生产者结束写入的时间不同，<code>ring buffer</code> 始终保持了初始调用<code>nextEntry()</code> 的顺序。这意味着一旦某个生产者写入时暂停，当它接触锁定后，其他后续提交可以立即执行。</p>
+<p>Ps:</p>
+<ol>
+<li>最新版本中, <code>ring buffer</code> 隐藏了 <code>producer barrier</code> 。如果你找不到，就当它存在于 <code>ring buffer</code>。</li>
+<li>2.0版本中，有写类名发生了改变。如果你感到困惑，请参考<a target="_blank" rel="noopener" href="http://mechanitis.blogspot.com/2011/08/disruptor-20-all-change-please.html">my summary of changes</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/disruptor/" rel="tag"># disruptor</a>
+              <a href="/tags/log4j2/" rel="tag"># log4j2</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2019/08/16/false-sharing/" rel="prev" title="【false sharing】伪共享">
+                  <i class="fa fa-chevron-left"></i> 【false sharing】伪共享
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2019/10/27/LRU%E5%8F%8A%E5%85%B6%E5%8F%98%E4%BD%93/" rel="next" title="LRU及其变体">
+                  LRU及其变体 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">shield</span>
+</div>
+  <div class="powered-by">تطبيق الموقع <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

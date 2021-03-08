@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"stonecj.cn","root":"/","images":"/images","scheme":"Muse","version":"8.2.2","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":false,"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"بحث...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="spring-boot有三种启动类  JarLauncher PropertiesLauncher WarLauncher   通常，我们会以第一种方式部署项目 spring-boot提供了插件spring-boot-maven-plugin用于把程序打包成一个可执行的jar包。在pom文件里加入这个插件即可： 12345678&lt;build&gt;    &lt;plugins&gt;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="spring-boot启动类及包外配置文件">
+<meta property="og:url" content="http://stonecj.cn/2019/01/12/spring-boot%E5%90%AF%E5%8A%A8%E7%B1%BB%E5%8F%8A%E5%8C%85%E5%A4%96%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6/index.html">
+<meta property="og:site_name" content="shield‘s blog">
+<meta property="og:description" content="spring-boot有三种启动类  JarLauncher PropertiesLauncher WarLauncher   通常，我们会以第一种方式部署项目 spring-boot提供了插件spring-boot-maven-plugin用于把程序打包成一个可执行的jar包。在pom文件里加入这个插件即可： 12345678&lt;build&gt;    &lt;plugins&gt;">
+<meta property="og:locale">
+<meta property="article:published_time" content="2019-01-12T13:18:40.000Z">
+<meta property="article:modified_time" content="2019-05-15T16:13:34.000Z">
+<meta property="article:author" content="shield">
+<meta property="article:tag" content="spring-boot">
+<meta property="article:tag" content="launcher">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://stonecj.cn/2019/01/12/spring-boot%E5%90%AF%E5%8A%A8%E7%B1%BB%E5%8F%8A%E5%8C%85%E5%A4%96%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-Hans'
+  };
+</script>
+<title>spring-boot启动类及包外配置文件 | shield‘s blog</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="تشغيل شريط التصفح" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">shield‘s blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          المحتويات
+        </li>
+        <li class="sidebar-nav-overview">
+          عام
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#JarLauncher%E7%9A%84%E6%89%A7%E8%A1%8C%E8%BF%87%E7%A8%8B"><span class="nav-number">1.</span> <span class="nav-text">JarLauncher的执行过程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B3%E4%BA%8E%E8%87%AA%E5%AE%9A%E4%B9%89%E7%9A%84%E7%B1%BB%E5%8A%A0%E8%BD%BD%E5%99%A8LaunchedURLClassLoader"><span class="nav-number">2.</span> <span class="nav-text">关于自定义的类加载器LaunchedURLClassLoader</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Spring-Boot-Loader%E7%9A%84%E4%BD%9C%E7%94%A8"><span class="nav-number">3.</span> <span class="nav-text">Spring Boot Loader的作用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8C%85%E5%A4%96%E6%8C%87%E5%AE%9A%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6"><span class="nav-number">4.</span> <span class="nav-text">包外指定配置文件</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">shield</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">48</span>
+          <span class="site-state-item-name">المقالات</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">الوسوم</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://stonecj.cn/2019/01/12/spring-boot%E5%90%AF%E5%8A%A8%E7%B1%BB%E5%8F%8A%E5%8C%85%E5%A4%96%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="shield">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="shield‘s blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          spring-boot启动类及包外配置文件
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">نُشر في</span>
+
+      <time title="أُنشأ: 2019-01-12 21:18:40" itemprop="dateCreated datePublished" datetime="2019-01-12T21:18:40+08:00">2019-01-12</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">عُدل في</span>
+        <time title="عُدل: 2019-05-16 00:13:34" itemprop="dateModified" datetime="2019-05-16T00:13:34+08:00">2019-05-16</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <blockquote>
+<p>spring-boot有三种启动类</p>
+<ul>
+<li>JarLauncher</li>
+<li>PropertiesLauncher</li>
+<li>WarLauncher</li>
+</ul>
+</blockquote>
+<p>通常，我们会以第一种方式部署项目</p>
+<p>spring-boot提供了插件spring-boot-maven-plugin用于把程序打包成一个可执行的jar包。在pom文件里加入这个插件即可：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">build</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">plugins</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">plugin</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-maven-plugin<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">plugin</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">plugins</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">build</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+
+
+<p>打包后的jar文件结构</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">├── META-INF</span><br><span class="line">│   ├── MANIFEST.MF</span><br><span class="line">│   └── maven</span><br><span class="line">│       └── org.xxx</span><br><span class="line">│           └── executable-jar</span><br><span class="line">│               ├── pom.properties</span><br><span class="line">│               └── pom.xml</span><br><span class="line">├── org</span><br><span class="line">│   └── springframework</span><br><span class="line">│       └── boot</span><br><span class="line">│           └── loader</span><br><span class="line">│               ├── ExecutableArchiveLauncher$1.class</span><br><span class="line">│               ├── ...</span><br><span class="line">└── BOOT-INFO</span><br></pre></td></tr></table></figure>
+
+
+
+<p>然后，启动程序</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -jar xxx.jar</span><br></pre></td></tr></table></figure>
+
+
+
+<p>打包出来fat jar内部有4种文件类型：</p>
+<ol>
+<li><p>META-INF文件夹：程序入口，其中MANIFEST.MF用于描述jar包的信息</p>
+</li>
+<li><p>BOOT-INFO 下 lib目录：放置第三方依赖的jar包，比如springboot的一些jar包</p>
+</li>
+<li><p>spring boot loader相关的代码</p>
+</li>
+<li><p>BOOT-INFO 下 classes目录模块自身的代码</p>
+</li>
+</ol>
+<p> MANIFEST.MF文件的内容：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">Manifest-Version: 1.0</span><br><span class="line">Implementation-Title: appname</span><br><span class="line">Implementation-Version: 1.0.0</span><br><span class="line">Archiver-Version: Plexus Archiver</span><br><span class="line">Built-By: xxx</span><br><span class="line">Implementation-Vendor-Id: cn.xxx.xxx.xxx</span><br><span class="line">Spring-Boot-Version: 1.5.15.RELEASE</span><br><span class="line">Implementation-Vendor: Pivotal Software, Inc.</span><br><span class="line">Main-Class: org.springframework.boot.loader.JarLauncher</span><br><span class="line">Start-Class: cn.victorplus.car.cas.xxx</span><br><span class="line">Spring-Boot-Classes: BOOT-INF/classes/</span><br><span class="line">Spring-Boot-Lib: BOOT-INF/lib/</span><br><span class="line">Created-By: Apache Maven 3.5.2</span><br><span class="line">Build-Jdk: 1.8.0_162</span><br><span class="line">Implementation-URL: http://projects.spring.io/spring-boot/xxx-xxx-xxx/</span><br></pre></td></tr></table></figure>
+
+
+
+<p>我们看到，它的Main-Class是org.springframework.boot.loader.JarLauncher，当我们使用java -jar执行jar包的时候会调用JarLauncher的main方法，而不是我们编写的SpringApplication。</p>
+<p>那么JarLauncher这个类是的作用是什么的？</p>
+<p>它是SpringBoot内部提供的工具Spring Boot Loader提供的一个用于执行Application类的工具类(fat jar内部有spring loader相关的代码就是因为这里用到了)。相当于Spring Boot Loader提供了一套标准用于执行SpringBoot打包出来的jar</p>
+<h2 id="JarLauncher的执行过程"><a href="#JarLauncher的执行过程" class="headerlink" title="JarLauncher的执行过程"></a>JarLauncher的执行过程</h2><p>JarLauncher的main方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 构造JarLauncher，然后调用它的launch方法。参数是控制台传递的</span></span><br><span class="line">    <span class="keyword">new</span> JarLauncher().launch(args);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>JarLauncher被构造的时候会调用父类ExecutableArchiveLauncher的构造方法。</p>
+<p>ExecutableArchiveLauncher的构造方法内部会去构造Archive，这里构造了JarFileArchive。构造JarFileArchive的过程中还会构造很多东西，比如JarFile，Entry …</p>
+<p>JarLauncher的launch方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">launch</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="comment">// 在系统属性中设置注册了自定义的URL处理器：org.springframework.boot.loader.jar.Handler。如果URL中没有指定处理器，会去系统属性中查询</span></span><br><span class="line">    JarFile.registerUrlProtocolHandler();</span><br><span class="line">    <span class="comment">// getClassPathArchives方法在会去找lib目录下对应的第三方依赖JarFileArchive，同时也会项目自身的JarFileArchive</span></span><br><span class="line">    <span class="comment">// 根据getClassPathArchives得到的JarFileArchive集合去创建类加载器ClassLoader。这里会构造一个LaunchedURLClassLoader类加载器，这个类加载器继承URLClassLoader，并使用这些JarFileArchive集合的URL构造成URLClassPath</span></span><br><span class="line">    <span class="comment">// LaunchedURLClassLoader类加载器的父类加载器是当前执行类JarLauncher的类加载器</span></span><br><span class="line">    ClassLoader classLoader = createClassLoader(getClassPathArchives());</span><br><span class="line">    <span class="comment">// getMainClass方法会去项目自身的Archive中的Manifest中找出key为Start-Class的类</span></span><br><span class="line">    <span class="comment">// 调用重载方法launch</span></span><br><span class="line">    launch(args, getMainClass(), classLoader);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">catch</span> (Exception ex) &#123;</span><br><span class="line">    ex.printStackTrace();</span><br><span class="line">    System.exit(<span class="number">1</span>);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Archive的getMainClass方法</span></span><br><span class="line"><span class="comment">// 这里会找出spring.study.executablejar.ExecutableJarApplication这个类</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> String <span class="title">getMainClass</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">	Manifest manifest = getManifest();</span><br><span class="line">	String mainClass = <span class="keyword">null</span>;</span><br><span class="line">	<span class="keyword">if</span> (manifest != <span class="keyword">null</span>) &#123;</span><br><span class="line">		mainClass = manifest.getMainAttributes().getValue(<span class="string">&quot;Start-Class&quot;</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (mainClass == <span class="keyword">null</span>) &#123;</span><br><span class="line">		<span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(</span><br><span class="line">				<span class="string">&quot;No &#x27;Start-Class&#x27; manifest entry specified in &quot;</span> + <span class="keyword">this</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> mainClass;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// launch重载方法</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">launch</span><span class="params">(String[] args, String mainClass, ClassLoader classLoader)</span></span></span><br><span class="line"><span class="function">		<span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">      <span class="comment">// 创建一个MainMethodRunner，并把args和Start-Class传递给它</span></span><br><span class="line">	Runnable runner = createMainMethodRunner(mainClass, args, classLoader);</span><br><span class="line">      <span class="comment">// 构造新线程</span></span><br><span class="line">	Thread runnerThread = <span class="keyword">new</span> Thread(runner);</span><br><span class="line">      <span class="comment">// 线程设置类加载器以及名字，然后启动</span></span><br><span class="line">	runnerThread.setContextClassLoader(classLoader);</span><br><span class="line">	runnerThread.setName(Thread.currentThread().getName());</span><br><span class="line">	runnerThread.start();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<p>MainMethodRunner的run方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="comment">// 根据Start-Class进行实例化</span></span><br><span class="line">    Class&lt;?&gt; mainClass = Thread.currentThread().getContextClassLoader()</span><br><span class="line">        .loadClass(<span class="keyword">this</span>.mainClassName);</span><br><span class="line">    <span class="comment">// 找出main方法</span></span><br><span class="line">    Method mainMethod = mainClass.getDeclaredMethod(<span class="string">&quot;main&quot;</span>, String[].class);</span><br><span class="line">    <span class="comment">// 如果main方法不存在，抛出异常</span></span><br><span class="line">    <span class="keyword">if</span> (mainMethod == <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(</span><br><span class="line">          <span class="keyword">this</span>.mainClassName + <span class="string">&quot; does not have a main method&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 调用</span></span><br><span class="line">    mainMethod.invoke(<span class="keyword">null</span>, <span class="keyword">new</span> Object[] &#123; <span class="keyword">this</span>.args &#125;);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">catch</span> (Exception ex) &#123;</span><br><span class="line">    UncaughtExceptionHandler handler = Thread.currentThread()</span><br><span class="line">        .getUncaughtExceptionHandler();</span><br><span class="line">    <span class="keyword">if</span> (handler != <span class="keyword">null</span>) &#123;</span><br><span class="line">      handler.uncaughtException(Thread.currentThread(), ex);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(ex);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Start-Class的main方法调用之后，内部会构造Spring容器，启动内置Servlet容器等过程。 这些过程我们都已经分析过了。</p>
+<h2 id="关于自定义的类加载器LaunchedURLClassLoader"><a href="#关于自定义的类加载器LaunchedURLClassLoader" class="headerlink" title="关于自定义的类加载器LaunchedURLClassLoader"></a>关于自定义的类加载器LaunchedURLClassLoader</h2><p>LaunchedURLClassLoader重写了loadClass方法，也就是说它修改了默认的类加载方式(先看该类是否已加载这部分不变，后面真正去加载类的规则改变了，不再是直接从父类加载器中去加载)。LaunchedURLClassLoader定义了自己的类加载规则：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> Class&lt;?&gt; doLoadClass(String name) <span class="keyword">throws</span> ClassNotFoundException &#123;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 1) Try the root class loader</span></span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">this</span>.rootClassLoader != <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">this</span>.rootClassLoader.loadClass(name);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">catch</span> (Exception ex) &#123;</span><br><span class="line">    <span class="comment">// Ignore and continue</span></span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 2) Try to find locally</span></span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    findPackage(name);</span><br><span class="line">    Class&lt;?&gt; cls = findClass(name);</span><br><span class="line">    <span class="keyword">return</span> cls;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">catch</span> (Exception ex) &#123;</span><br><span class="line">    <span class="comment">// Ignore and continue</span></span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 3) Use standard loading</span></span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">super</span>.loadClass(name, <span class="keyword">false</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>加载规则：</p>
+<ol>
+<li>如果根类加载器存在，调用它的加载方法。这里是根类加载是ExtClassLoader</li>
+<li>调用LaunchedURLClassLoader自身的findClass方法，也就是URLClassLoader的findClass方法</li>
+<li>调用父类的loadClass方法，也就是执行默认的类加载顺序(从BootstrapClassLoader开始从下往下寻找)</li>
+</ol>
+<p>LaunchedURLClassLoader自身的findClass方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">protected</span> Class&lt;?&gt; findClass(<span class="keyword">final</span> String name)</span><br><span class="line">     <span class="keyword">throws</span> ClassNotFoundException</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> AccessController.doPrivileged(</span><br><span class="line">            <span class="keyword">new</span> PrivilegedExceptionAction&lt;Class&lt;?&gt;&gt;() &#123;</span><br><span class="line">                <span class="keyword">public</span> Class&lt;?&gt; run() <span class="keyword">throws</span> ClassNotFoundException &#123;</span><br><span class="line">                    <span class="comment">// 把类名解析成路径并加上.class后缀</span></span><br><span class="line">                    String path = name.replace(<span class="string">&#x27;.&#x27;</span>, <span class="string">&#x27;/&#x27;</span>).concat(<span class="string">&quot;.class&quot;</span>);</span><br><span class="line">                    <span class="comment">// 基于之前得到的第三方jar包依赖以及自己的jar包得到URL数组，进行遍历找出对应类名的资源</span></span><br><span class="line">                    <span class="comment">// 比如path是org/springframework/boot/loader/JarLauncher.class，它在jar:file:/Users/Format/Develop/gitrepository/springboot-analysis/springboot-executable-jar/target/executable-jar-1.0-SNAPSHOT.jar!/lib/spring-boot-loader-1.3.5.RELEASE.jar!/中被找出</span></span><br><span class="line">                    <span class="comment">// 那么找出的资源对应的URL为jar:file:/Users/Format/Develop/gitrepository/springboot-analysis/springboot-executable-jar/target/executable-jar-1.0-SNAPSHOT.jar!/lib/spring-boot-loader-1.3.5.RELEASE.jar!/org/springframework/boot/loader/JarLauncher.class</span></span><br><span class="line">                    Resource res = ucp.getResource(path, <span class="keyword">false</span>);</span><br><span class="line">                    <span class="keyword">if</span> (res != <span class="keyword">null</span>) &#123; <span class="comment">// 找到了资源</span></span><br><span class="line">                        <span class="keyword">try</span> &#123;</span><br><span class="line">                            <span class="keyword">return</span> defineClass(name, res);</span><br><span class="line">                        &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">                            <span class="keyword">throw</span> <span class="keyword">new</span> ClassNotFoundException(name, e);</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123; <span class="comment">// 找不到资源的话直接抛出ClassNotFoundException异常</span></span><br><span class="line">                        <span class="keyword">throw</span> <span class="keyword">new</span> ClassNotFoundException(name);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;, acc);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (java.security.PrivilegedActionException pae) &#123;</span><br><span class="line">        <span class="keyword">throw</span> (ClassNotFoundException) pae.getException();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>下面是LaunchedURLClassLoader的一个测试：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 注册org.springframework.boot.loader.jar.Handler URL协议处理器</span></span><br><span class="line">JarFile.registerUrlProtocolHandler();</span><br><span class="line"><span class="comment">// 构造LaunchedURLClassLoader类加载器，这里使用了2个URL，分别对应jar包中依赖包spring-boot-loader和spring-boot，使用 &quot;!/&quot; 分开，需要org.springframework.boot.loader.jar.Handler处理器处理</span></span><br><span class="line">LaunchedURLClassLoader classLoader = <span class="keyword">new</span> LaunchedURLClassLoader(</span><br><span class="line">        <span class="keyword">new</span> URL[] &#123;</span><br><span class="line">                <span class="keyword">new</span> URL(<span class="string">&quot;jar:file:/Users/Format/Develop/gitrepository/springboot-analysis/springboot-executable-jar/target/executable-jar-1.0-SNAPSHOT.jar!/lib/spring-boot-loader-1.3.5.RELEASE.jar!/&quot;</span>)</span><br><span class="line">                , <span class="keyword">new</span> URL(<span class="string">&quot;jar:file:/Users/Format/Develop/gitrepository/springboot-analysis/springboot-executable-jar/target/executable-jar-1.0-SNAPSHOT.jar!/lib/spring-boot-1.3.5.RELEASE.jar!/&quot;</span>)</span><br><span class="line">        &#125;,</span><br><span class="line">        LaunchedURLClassLoaderTest.class.getClassLoader());</span><br><span class="line"></span><br><span class="line"><span class="comment">// 加载类</span></span><br><span class="line"><span class="comment">// 这2个类都会在第二步本地查找中被找出(URLClassLoader的findClass方法)</span></span><br><span class="line">classLoader.loadClass(<span class="string">&quot;org.springframework.boot.loader.JarLauncher&quot;</span>);</span><br><span class="line">classLoader.loadClass(<span class="string">&quot;org.springframework.boot.SpringApplication&quot;</span>);</span><br><span class="line"><span class="comment">// 在第三步使用默认的加载顺序在ApplicationClassLoader中被找出</span></span><br><span class="line">classLoader.loadClass(<span class="string">&quot;org.springframework.boot.autoconfigure.web.DispatcherServletAutoConfiguration&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="Spring-Boot-Loader的作用"><a href="#Spring-Boot-Loader的作用" class="headerlink" title="Spring Boot Loader的作用"></a>Spring Boot Loader的作用</h2><p>SpringBoot在可执行jar包中定义了自己的一套规则，比如第三方依赖jar包在/lib目录下，jar包的URL路径使用自定义的规则并且这个规则需要使用org.springframework.boot.loader.jar.Handler处理器处理。它的Main-Class使用JarLauncher，如果是war包，使用WarLauncher执行。这些Launcher内部都会另起一个线程启动自定义的SpringApplication类。</p>
+<h2 id="包外指定配置文件"><a href="#包外指定配置文件" class="headerlink" title="包外指定配置文件"></a>包外指定配置文件</h2><p>修改pom.xml</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">// 不拷贝资源文件</span><br><span class="line"><span class="tag">&lt;<span class="name">resources</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">resource</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">directory</span>&gt;</span>src/main/resources<span class="tag">&lt;/<span class="name">directory</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">excludes</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">exclude</span>&gt;</span>*<span class="tag">&lt;/<span class="name">exclude</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">excludes</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">filtering</span>&gt;</span>true<span class="tag">&lt;/<span class="name">filtering</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">resource</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">resources</span>&gt;</span></span><br><span class="line"></span><br><span class="line">// 修改打包方式</span><br><span class="line"><span class="tag">&lt;<span class="name">plugin</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-maven-plugin<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">layout</span>&gt;</span>ZIP<span class="tag">&lt;/<span class="name">layout</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">plugin</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+
+
+<p>打包结果比对</p>
+<p>配置前</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Main-Class: org.springframework.boot.loader.JarLauncher</span><br><span class="line">Start-Class: com.chinaunicom.gateway.GatewayApplication</span><br></pre></td></tr></table></figure>
+
+<p>配置后</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Main-Class: org.springframework.boot.loader.PropertiesLauncher</span><br><span class="line">Start-Class: com.chinaunicom.gateway.GatewayApplication</span><br></pre></td></tr></table></figure>
+
+
+
+<p>发现是类加载器变了，此时启动类为PropertiesLauncher。文章开头可见</p>
+<p>同时，启动方式变更</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -Dloader.path=your_config_path -jar xxx.jar</span><br></pre></td></tr></table></figure>
+
+
+
+
+
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/spring-boot/" rel="tag"># spring-boot</a>
+              <a href="/tags/launcher/" rel="tag"># launcher</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2019/01/05/%E7%99%BE%E5%BA%A6%E7%88%AC%E8%99%AB%E6%A8%A1%E6%8B%9F/" rel="prev" title="百度爬虫模拟">
+                  <i class="fa fa-chevron-left"></i> 百度爬虫模拟
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2019/01/19/beanPostProcessor%E5%B8%B8%E8%A7%81%E5%AE%9E%E7%8E%B0/" rel="next" title="beanPostProcessor常见实现">
+                  beanPostProcessor常见实现 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">shield</span>
+</div>
+  <div class="powered-by">تطبيق الموقع <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

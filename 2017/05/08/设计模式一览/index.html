@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"stonecj.cn","root":"/","images":"/images","scheme":"Muse","version":"8.2.2","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":false,"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"بحث...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="设计模式分类创建型： factory method：工厂类接口，在工厂类实现中定义要创建的类。&#x3D;&#x3D;典型特征：只有一个创建方法。&#x3D;&#x3D; abstract factory：工厂类接口，在工厂类实现中定义要创建的一类产品族。&#x3D;&#x3D;典型特征：有多个创建不同产品的方法。&#x3D;&#x3D; builder：通过部件，组装产品。在建造者中，依次添加产品部件。&#x3D;&#x3D;典型特征：建造类中添加组件，产品类中有个执行方法。&#x3D;&#x3D; protot">
+<meta property="og:type" content="article">
+<meta property="og:title" content="设计模式一览">
+<meta property="og:url" content="http://stonecj.cn/2017/05/08/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%E4%B8%80%E8%A7%88/index.html">
+<meta property="og:site_name" content="shield‘s blog">
+<meta property="og:description" content="设计模式分类创建型： factory method：工厂类接口，在工厂类实现中定义要创建的类。&#x3D;&#x3D;典型特征：只有一个创建方法。&#x3D;&#x3D; abstract factory：工厂类接口，在工厂类实现中定义要创建的一类产品族。&#x3D;&#x3D;典型特征：有多个创建不同产品的方法。&#x3D;&#x3D; builder：通过部件，组装产品。在建造者中，依次添加产品部件。&#x3D;&#x3D;典型特征：建造类中添加组件，产品类中有个执行方法。&#x3D;&#x3D; protot">
+<meta property="og:locale">
+<meta property="article:published_time" content="2017-05-08T12:41:45.000Z">
+<meta property="article:modified_time" content="2019-05-15T16:13:34.000Z">
+<meta property="article:author" content="shield">
+<meta property="article:tag" content="设计模式">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://stonecj.cn/2017/05/08/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%E4%B8%80%E8%A7%88/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-Hans'
+  };
+</script>
+<title>设计模式一览 | shield‘s blog</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="تشغيل شريط التصفح" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">shield‘s blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          المحتويات
+        </li>
+        <li class="sidebar-nav-overview">
+          عام
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%E5%88%86%E7%B1%BB"><span class="nav-number">1.</span> <span class="nav-text">设计模式分类</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E5%9E%8B%EF%BC%9A"><span class="nav-number">1.1.</span> <span class="nav-text">创建型：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BB%93%E6%9E%84%E5%9E%8B%EF%BC%9A"><span class="nav-number">1.2.</span> <span class="nav-text">结构型：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A1%8C%E4%B8%BA%E5%9E%8B%EF%BC%9A"><span class="nav-number">1.3.</span> <span class="nav-text">行为型：</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">shield</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">48</span>
+          <span class="site-state-item-name">المقالات</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">الوسوم</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://stonecj.cn/2017/05/08/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%E4%B8%80%E8%A7%88/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="shield">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="shield‘s blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          设计模式一览
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">نُشر في</span>
+
+      <time title="أُنشأ: 2017-05-08 20:41:45" itemprop="dateCreated datePublished" datetime="2017-05-08T20:41:45+08:00">2017-05-08</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">عُدل في</span>
+        <time title="عُدل: 2019-05-16 00:13:34" itemprop="dateModified" datetime="2019-05-16T00:13:34+08:00">2019-05-16</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="设计模式分类"><a href="#设计模式分类" class="headerlink" title="设计模式分类"></a>设计模式分类</h2><h3 id="创建型："><a href="#创建型：" class="headerlink" title="创建型："></a>创建型：</h3><ol>
+<li>factory method：工厂类接口，在工厂类实现中定义要创建的类。==典型特征：只有一个创建方法。==</li>
+<li>abstract factory：工厂类接口，在工厂类实现中定义要创建的一类产品族。==典型特征：有多个创建不同产品的方法。==</li>
+<li>builder：通过部件，组装产品。在建造者中，依次添加产品部件。==典型特征：建造类中添加组件，产品类中有个执行方法。==</li>
+<li>prototype：clone模式，通过克隆创建新对象。==典型特征：实现Clonable，有浅克隆、深克隆==</li>
+<li>singleton：单例模式，饿汉式/懒汉式(同步方法，嵌套【同步代码块+双重检测】，volatile+双重检测)。==典型特征：饿汉式较安全，懒汉式可以提高系统初始化速度，但要注意多线程安全==</li>
+</ol>
+<h3 id="结构型："><a href="#结构型：" class="headerlink" title="结构型："></a>结构型：</h3><ol>
+<li>adapter：API转换，封装具体的实现类，提供统一接口。==典型特征：有一套标准的接口API，其他实现类，需要经过适配器封装成标准API模式。== </li>
+<li>bridge：桥接模式，类似静态代理。==典型特征：定义功能接口。具体类delegate功能类，完成其部分功能。==</li>
+<li>composite：复合模式，将对象组合成树形结构，表示“整体-部分”的层次结构，使得对单个对象和复合对象的调用一致。==典型特征：树、子树、树叶，树叶屏蔽部分方法。== </li>
+<li>decorator：装饰器模式，动态的为具体类添加功能。==典型特征：装饰器抽象类实现目标接口类，然后装饰器具体类delegate具体对象。== </li>
+<li>facade：外观模式，隐藏内部实现方式，定义统一的接口，方便外部调用。==典型特征：给外部定义专用的接口，对内部具体实现类封装。== </li>
+<li>flyWeight：享元模式，是一个提高程序效率和性能的模式，采用共享来避免大量拥有相同内容对象的开销。==典型特征：结合工厂模式，传入key，目标对象已存在，直接返回；不存在，创建后返回。== </li>
+<li>proxy：代理模式，为其他对象提供一个代理类，控制访问。==典型特征：实现jdk动态代理，或者cglib动态代理接口。在方法调用前后，控制访问。== </li>
+</ol>
+<h3 id="行为型："><a href="#行为型：" class="headerlink" title="行为型："></a>行为型：</h3><ol>
+<li>observer：观察者模式，也称publish-subscribe模式。jdk自带接口类<code>java.util.Observable</code>实现发布者；<code>java.util.Observer</code>实现订阅者。</li>
+<li>state：使得对象被划分成对象 + 状态对象两部分，一定程度上体现了Delegate的设计原则。<strong>替代if…else/switch的一种方式</strong> 。状态以类表示，包含对应状态的执行动作。每次执行后，切换状态。</li>
+<li>strategy：策略模式，一个行为有多种实现。根据调用者动态选择不同行为实现。</li>
+<li>visitor：访问者模式，由访问者，对象结构类，元素接口，元素类构成。由对象结构类组装访问者+元素，易拓展，但是零散/复杂。</li>
+<li>interpreter：解释器模式，给定一个语言，定义它的的文法的一种表示，并定义一个解释器。解释器使用该表示来解释语言中的句子。</li>
+<li>template method：模板方法模式，接口中定义骨架，具体实现延迟到子类。</li>
+<li>chain of responsibility：责任链模式，将请求的发送者/接收者解耦合，使多个接收对象都有机会处理请求。将这些对象连成一条链(线，树，环)，沿着链传递请求，直到有一个对象处理它。</li>
+<li>command：命令行模式，将请求封装成一个对象，从而可以使用不同的请求命令对客户(invoker)进行参数化；对请求排队或记录日志，以及支持可取消的操作。缺点：会导致某些系统有过多的具体Command类。</li>
+<li>iterator：迭代器模式，提供一个方法，顺序访问一个聚合对象的各个元素，而又不暴露该对象的内部表示。常见实现接口<code>java.util.Iterator</code>，提供不同实现，高效迭代聚合对象(因为底层数据结构不同)。</li>
+<li>mediator：中介者模式，用一个中介者对象来封装一系列的对象交互。中介者使各对象不需要显式的相互引用，从而使其耦合松散，而且可以独立的改变他们之间的交互。==典型特征：同事类注册给终结者。同事类调用时，由中介者协调其他注册的同事类行为。== </li>
+<li>memento：备忘录模式，在不破坏封装的前提下，捕获一个对象的内部状态，并在该对象之外保存这个状态。这样就可以将该对象恢复到原先保存前的状态。</li>
+</ol>
+<p><strong>参考文档：</strong></p>
+<ol>
+<li><a target="_blank" rel="noopener" href="http://blog.csdn.net/zhoudaxia/article/details/17048853">http://blog.csdn.net/zhoudaxia/article/details/17048853</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/" rel="tag"># 设计模式</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2017/05/08/%E5%8A%A8%E6%80%81%E8%BF%9E%E9%80%9A%E6%80%A7%E9%97%AE%E9%A2%98/" rel="prev" title="动态连通性问题">
+                  <i class="fa fa-chevron-left"></i> 动态连通性问题
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2017/07/20/JVM%E7%AC%94%E8%AE%B0/" rel="next" title="JVM笔记">
+                  JVM笔记 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">shield</span>
+</div>
+  <div class="powered-by">تطبيق الموقع <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

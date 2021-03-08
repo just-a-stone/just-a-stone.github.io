@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"stonecj.cn","root":"/","images":"/images","scheme":"Muse","version":"8.2.2","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":false,"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"بحث...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="一直以来，我们在交易系统中使用BigDecimal类做运算。这成为了一种习惯，导致我忘记了为什么用它。  ​    原因：精度丢失 ​    不管在 java 还是 js ，亦或者 python 中。 ​    0.1 + 0.2  &#x3D; 0.30000000000000004 ​    所以，为了计算准确，我们使用BigDecimal js中不存在原生的BigDecimal替代方案big.js，">
+<meta property="og:type" content="article">
+<meta property="og:title" content="精度丢失 - js &amp; java">
+<meta property="og:url" content="http://stonecj.cn/2017/05/03/%E7%B2%BE%E5%BA%A6%E4%B8%A2%E5%A4%B1-js-java/index.html">
+<meta property="og:site_name" content="shield‘s blog">
+<meta property="og:description" content="一直以来，我们在交易系统中使用BigDecimal类做运算。这成为了一种习惯，导致我忘记了为什么用它。  ​    原因：精度丢失 ​    不管在 java 还是 js ，亦或者 python 中。 ​    0.1 + 0.2  &#x3D; 0.30000000000000004 ​    所以，为了计算准确，我们使用BigDecimal js中不存在原生的BigDecimal替代方案big.js，">
+<meta property="og:locale">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/General_floating_point_frac.svg">
+<meta property="article:published_time" content="2017-05-02T16:04:54.000Z">
+<meta property="article:modified_time" content="2019-05-15T16:13:34.000Z">
+<meta property="article:author" content="shield">
+<meta property="article:tag" content="java">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/General_floating_point_frac.svg">
+
+
+<link rel="canonical" href="http://stonecj.cn/2017/05/03/%E7%B2%BE%E5%BA%A6%E4%B8%A2%E5%A4%B1-js-java/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-Hans'
+  };
+</script>
+<title>精度丢失 - js & java | shield‘s blog</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="تشغيل شريط التصفح" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">shield‘s blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          المحتويات
+        </li>
+        <li class="sidebar-nav-overview">
+          عام
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#js%E4%B8%AD%E4%B8%8D%E5%AD%98%E5%9C%A8%E5%8E%9F%E7%94%9F%E7%9A%84BigDecimal"><span class="nav-number">1.</span> <span class="nav-text">js中不存在原生的BigDecimal</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Double"><span class="nav-number">2.</span> <span class="nav-text">Double</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#BigDecimal"><span class="nav-number">3.</span> <span class="nav-text">BigDecimal</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%90%E7%AE%97%E6%93%8D%E4%BD%9C"><span class="nav-number">3.1.</span> <span class="nav-text">运算操作</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8A%A0%E6%B3%95"><span class="nav-number">3.1.1.</span> <span class="nav-text">加法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B9%98%E6%B3%95"><span class="nav-number">3.1.2.</span> <span class="nav-text">乘法</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#BigInteger"><span class="nav-number">4.</span> <span class="nav-text">BigInteger</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">shield</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">48</span>
+          <span class="site-state-item-name">المقالات</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">الوسوم</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://stonecj.cn/2017/05/03/%E7%B2%BE%E5%BA%A6%E4%B8%A2%E5%A4%B1-js-java/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="shield">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="shield‘s blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          精度丢失 - js & java
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">نُشر في</span>
+
+      <time title="أُنشأ: 2017-05-03 00:04:54" itemprop="dateCreated datePublished" datetime="2017-05-03T00:04:54+08:00">2017-05-03</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">عُدل في</span>
+        <time title="عُدل: 2019-05-16 00:13:34" itemprop="dateModified" datetime="2019-05-16T00:13:34+08:00">2019-05-16</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <blockquote>
+<p>一直以来，我们在交易系统中使用BigDecimal类做运算。这成为了一种习惯，导致我忘记了为什么用它。</p>
+</blockquote>
+<p>​    <u>原因：精度丢失</u></p>
+<p>​    不管在 <strong>java</strong> 还是 <strong>js</strong> ，亦或者 <strong>python</strong> 中。</p>
+<p>​    0.1 + 0.2  = 0.30000000000000004</p>
+<p>​    所以，为了计算准确，我们使用BigDecimal</p>
+<h2 id="js中不存在原生的BigDecimal"><a href="#js中不存在原生的BigDecimal" class="headerlink" title="js中不存在原生的BigDecimal"></a>js中不存在原生的BigDecimal</h2><p>替代方案<a target="_blank" rel="noopener" href="https://github.com/MikeMcl/big.js">big.js</a>，<a target="_blank" rel="noopener" href="http://mikemcl.github.io/big.js/#">API</a></p>
+<h2 id="Double"><a href="#Double" class="headerlink" title="Double"></a>Double</h2><p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/General_floating_point_frac.svg" alt="img"></p>
+<table>
+<thead>
+<tr>
+<th align="center">sign</th>
+<th align="center">exponent</th>
+<th align="center">fraction</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">1位</td>
+<td align="center">11位</td>
+<td align="center">52位</td>
+</tr>
+<tr>
+<td align="center">63</td>
+<td align="center">62-52(实际的指数大小-1024 ~ +1023)</td>
+<td align="center">51-0</td>
+</tr>
+</tbody></table>
+<p>例：3.5</p>
+<p>sign: 0</p>
+<p>exponent: 10000000000</p>
+<p>fraction: 1100000000000000000000000000000000000000000000000000</p>
+<p>指数部分10000000000-1023=1</p>
+<p>尾数部分11</p>
+<p>根据<a target="_blank" rel="noopener" href="https://zh.wikipedia.org/zh-cn/IEEE_754?spm=5176.100239.blogcont20309.6.cfGOwv#.E8.A7.84.E7.BA.A6.E5.BD.A2.E5.BC.8F.E7.9A.84.E6.B5.AE.E7.82.B9.E6.95.B0">规约形式</a>尾数的整数部分为1</p>
+<p>综上，得==1.11B * 10^+1^ = 11.1B = 2<del>1</del> + 2<del>0</del> + 2<del>-1</del> [^二进制位表示 ] = 2^1^ + 2^0^ + 2^-1^ = 3.5==</p>
+<blockquote>
+<p>3.5刚好可以用二进制表示，但是还有许多小数是无法用二进制表述的</p>
+</blockquote>
+<p>例如：0.1</p>
+<p>sign: 0</p>
+<p>exponent: 01111111011</p>
+<p>fraction: 1001100110011001100110011001100110011001100110011010</p>
+<p>无法使用2<del>x</del> + 2<del>y</del> + …这样的形式表示</p>
+<p>所以 0.1 + 0.2 == 0.3 false</p>
+<h2 id="BigDecimal"><a href="#BigDecimal" class="headerlink" title="BigDecimal"></a>BigDecimal</h2><blockquote>
+<p>解决方案：不适用二进制，而是使用==十进制(<a href="#BigInteger">BigInteger</a>) + 小数点位置(scale)==来表示。 </p>
+</blockquote>
+<p>例如：100.001</p>
+<p>unscaledValue：100001</p>
+<p>scale：3</p>
+<p>即，100.001 = 100001 * 10^-3^</p>
+<h3 id="运算操作"><a href="#运算操作" class="headerlink" title="运算操作"></a>运算操作</h3><h4 id="加法"><a href="#加法" class="headerlink" title="加法"></a>加法</h4><p>x*10^-n^ + y*10^-m^ = x*10^-n^ + (y*10^-m+n^)*10^-n^ = (x + y*10^-m+n^) * 10^-n^ ，其中n &gt; m</p>
+<h4 id="乘法"><a href="#乘法" class="headerlink" title="乘法"></a>乘法</h4><p>x*10^-n^ * y*10^-m^ = (x*y) * 10^n+m^</p>
+<h2 id="BigInteger"><a href="#BigInteger" class="headerlink" title="BigInteger"></a>BigInteger</h2><blockquote>
+<p>可以表示任意精度的整数，当你使用long类型进行运算的时候，可能产生长度溢出，此时就可以考虑使用BigInteger。BigDecimal就是使用它作为backend。</p>
+</blockquote>
+<blockquote>
+<p>实现方案：==使用数组来存储==</p>
+</blockquote>
+<p><strong>参考资料</strong></p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://yq.aliyun.com/articles/20309">https://yq.aliyun.com/articles/20309</a></li>
+<li><a target="_blank" rel="noopener" href="http://zh.wikipedia.org/wiki/IEEE_754?spm=5176.100239.blogcont20309.12.cfGOwv">http://zh.wikipedia.org/wiki/IEEE_754</a></li>
+<li><a target="_blank" rel="noopener" href="http://en.wikipedia.org/wiki/Floating_point?spm=5176.100239.blogcont20309.13.cfGOwv">http://en.wikipedia.org/wiki/Floating_point</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/java/" rel="tag"># java</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2017/05/03/%E5%88%86%E7%B1%BB%E4%B8%8E%E8%81%9A%E7%B1%BB/" rel="prev" title="分类与聚类">
+                  <i class="fa fa-chevron-left"></i> 分类与聚类
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2017/05/08/%E4%BB%A3%E7%90%86%E6%A8%A1%E5%BC%8F/" rel="next" title="代理模式">
+                  代理模式 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">shield</span>
+</div>
+  <div class="powered-by">تطبيق الموقع <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

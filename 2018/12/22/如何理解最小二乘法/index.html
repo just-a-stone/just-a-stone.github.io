@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"stonecj.cn","root":"/","images":"/images","scheme":"Muse","version":"8.2.2","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":false,"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"بحث...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}};
+  </script>
+<meta name="description" content="1. 日用而不知来看一个生活中的例子。比如说，有五把尺子：  用它们来分别测量一线段的长度，得到的数值分别为（颜色指不同的尺子）：  之所以出现不同的值可能因为：  不同厂家的尺子的生产精度不同 尺子材质不同，热胀冷缩不一样 测量的时候心情起伏不定 ……  总之就是有误差，这种情况下，一般取平均值来作为线段的长度：  日常中就是这么使用的。可是作为很事’er的数学爱好者，自然要想下：  这样做有道">
+<meta property="og:type" content="article">
+<meta property="og:title" content="如何理解最小二乘法">
+<meta property="og:url" content="http://stonecj.cn/2018/12/22/%E5%A6%82%E4%BD%95%E7%90%86%E8%A7%A3%E6%9C%80%E5%B0%8F%E4%BA%8C%E4%B9%98%E6%B3%95/index.html">
+<meta property="og:site_name" content="shield‘s blog">
+<meta property="og:description" content="1. 日用而不知来看一个生活中的例子。比如说，有五把尺子：  用它们来分别测量一线段的长度，得到的数值分别为（颜色指不同的尺子）：  之所以出现不同的值可能因为：  不同厂家的尺子的生产精度不同 尺子材质不同，热胀冷缩不一样 测量的时候心情起伏不定 ……  总之就是有误差，这种情况下，一般取平均值来作为线段的长度：  日常中就是这么使用的。可是作为很事’er的数学爱好者，自然要想下：  这样做有道">
+<meta property="og:locale">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfxnxo9pdj30dw0ahwfy.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfxoc2lbbj306104x3yk.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyhvhnlvnpj308r015t8o.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfxse8iakj30f70b6dg3.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfxt761gdj30f80b6gly.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfxx3auwjj30fu0b6jrs.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfxxrdnqmj30ga0adglz.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfxyub7dpj30c80fa74s.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfy0ccnttj306w00vq2v.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfy0ogs01j30fb02naa7.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfy13ctu0j30do015dfu.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfy2iva8xj306w00vq2v.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfy3yakiqj306104kq30.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfy5hjbj7j30jh0b6aam.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfy5th1a1j303300nwed.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfy63qjt7j30gg0b63z4.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfy6ir0yyj308j04haa6.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfy6r7kvgj309800v3yh.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfy71dz5mj307h02cgln.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfy7med6kj302g01wt8m.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfy7z8enzj30gg0b6aaj.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfy8bpn2zj304h00pgli.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfy9glykkj30kz0b6t9f.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfyaflpodj30ci09q3zc.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfyaqyvhcj30dw08vgma.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfybc6d0kj30ad0db3zl.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfyblyvdzj306104x3yk.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfybw5o9hj302h00jglh.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfyc6zduwj300w00n3yd.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfycj999aj308z021q2y.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfyd1zyfej30cz0b6weo.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfydeqdo7j30cz0b6mxe.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfye68c9jj302r018dfq.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfyedsvw0j307d0143yg.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfyeni3lgj303o018q2u.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfyf9a2tij304e01k3yf.jpg">
+<meta property="og:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfyfl9smnj307701k0so.jpg">
+<meta property="article:published_time" content="2018-12-22T15:49:07.000Z">
+<meta property="article:modified_time" content="2019-05-15T16:13:34.000Z">
+<meta property="article:author" content="shield">
+<meta property="article:tag" content="最小二乘法">
+<meta property="article:tag" content="最大似然估计">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfxnxo9pdj30dw0ahwfy.jpg">
+
+
+<link rel="canonical" href="http://stonecj.cn/2018/12/22/%E5%A6%82%E4%BD%95%E7%90%86%E8%A7%A3%E6%9C%80%E5%B0%8F%E4%BA%8C%E4%B9%98%E6%B3%95/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-Hans'
+  };
+</script>
+<title>如何理解最小二乘法 | shield‘s blog</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="تشغيل شريط التصفح" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">shield‘s blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          المحتويات
+        </li>
+        <li class="sidebar-nav-overview">
+          عام
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E6%97%A5%E7%94%A8%E8%80%8C%E4%B8%8D%E7%9F%A5"><span class="nav-number">1.</span> <span class="nav-text">1. 日用而不知</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E6%9C%80%E5%B0%8F%E4%BA%8C%E4%B9%98%E6%B3%95"><span class="nav-number">2.</span> <span class="nav-text">2. 最小二乘法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-%E6%8E%A8%E5%B9%BF"><span class="nav-number">3.</span> <span class="nav-text">3. 推广</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-%E6%9C%80%E5%B0%8F%E4%BA%8C%E4%B9%98%E6%B3%95%E4%B8%8E%E6%AD%A3%E6%80%81%E5%88%86%E5%B8%83"><span class="nav-number">4.</span> <span class="nav-text">4. 最小二乘法与正态分布</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">shield</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">48</span>
+          <span class="site-state-item-name">المقالات</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">67</span>
+        <span class="site-state-item-name">الوسوم</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://stonecj.cn/2018/12/22/%E5%A6%82%E4%BD%95%E7%90%86%E8%A7%A3%E6%9C%80%E5%B0%8F%E4%BA%8C%E4%B9%98%E6%B3%95/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="shield">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="shield‘s blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          如何理解最小二乘法
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">نُشر في</span>
+
+      <time title="أُنشأ: 2018-12-22 23:49:07" itemprop="dateCreated datePublished" datetime="2018-12-22T23:49:07+08:00">2018-12-22</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">عُدل في</span>
+        <time title="عُدل: 2019-05-16 00:13:34" itemprop="dateModified" datetime="2019-05-16T00:13:34+08:00">2019-05-16</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h3 id="1-日用而不知"><a href="#1-日用而不知" class="headerlink" title="1. 日用而不知"></a>1. 日用而不知</h3><p>来看一个生活中的例子。比如说，有五把尺子：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfxnxo9pdj30dw0ahwfy.jpg"></p>
+<p>用它们来分别测量一线段的长度，得到的数值分别为（颜色指不同的尺子）：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfxoc2lbbj306104x3yk.jpg"></p>
+<p>之所以出现不同的值可能因为：</p>
+<ul>
+<li>不同厂家的尺子的生产精度不同</li>
+<li>尺子材质不同，热胀冷缩不一样</li>
+<li>测量的时候心情起伏不定</li>
+<li>……</li>
+</ul>
+<p>总之就是有误差，这种情况下，一般取平均值来作为线段的长度：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyhvhnlvnpj308r015t8o.jpg"></p>
+<p>日常中就是这么使用的。可是作为很事’er的数学爱好者，自然要想下：</p>
+<ul>
+<li>这样做有道理吗？</li>
+<li>用调和平均数行不行？</li>
+<li>用中位数行不行？</li>
+<li>用几何平均数行不行？</li>
+</ul>
+<h3 id="2-最小二乘法"><a href="#2-最小二乘法" class="headerlink" title="2. 最小二乘法"></a>2. 最小二乘法</h3><p>换一种思路来思考刚才的问题。</p>
+<p>首先，把测试得到的值画在笛卡尔坐标系中，分别记作$y_i$：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfxse8iakj30f70b6dg3.jpg"></p>
+<p>其次，把要猜测的线段长度的真实值用平行于横轴的直线来表示（因为是猜测的，所以用虚线来画），记作$y$：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfxt761gdj30f80b6gly.jpg"></p>
+<p>每个点都向$y$做垂线，垂线的长度就是$|y - y_i|$, 也可以理解为测量值和真实值之间的误差：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfxx3auwjj30fu0b6jrs.jpg"></p>
+<p>因为误差是长度，还要取绝对值，计算起来麻烦，就干脆用平方来代表误差：</p>
+<p>​                                        $\left| y - y _ { i } \right| \rightarrow \left( y - y _ { i } \right) ^ { 2 }$</p>
+<p>总的误差的平方就是：</p>
+<p>​                                        $\epsilon = \sum \left( y - y _ { i } \right) ^ { 2 }$</p>
+<p>因为$y$是猜测的，所以可以不断变换：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfxxrdnqmj30ga0adglz.jpg"></p>
+<p>自然，总的误差$\epsilon$也是在不断变化的。</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfxyub7dpj30c80fa74s.jpg"></p>
+<p>法国数学家，阿德里安-馬里·勒讓德（1752－1833，这个头像有点抽象）提出让总的误差的平方最小的$y$就是真值，这是基于，如果误差是随机的，应该围绕真值上下波动（关于这点可以看下“<a target="_blank" rel="noopener" href="https://www.matongxue.com/madocs/808.html">如何理解无偏估计？</a>”）。</p>
+<p>这就是<strong>最小二乘法</strong>，即：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfy0ccnttj306w00vq2v.jpg"></p>
+<p>这个猜想也蛮符合直觉的，来算一下。</p>
+<p>这是一个二次函数，对其求导，导数为0的时候取得最小值：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfy0ogs01j30fb02naa7.jpg"></p>
+<p>进而：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfy13ctu0j30do015dfu.jpg"></p>
+<p>正好是算术平均数。</p>
+<p>原来算术平均数可以让误差最小啊，这下看来选用它显得讲道理了。</p>
+<p>以下这种方法：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfy2iva8xj306w00vq2v.jpg"></p>
+<p>就是最小二乘法，所谓“二乘”就是平方的意思，台湾直接翻译为最小平方法。</p>
+<h3 id="3-推广"><a href="#3-推广" class="headerlink" title="3. 推广"></a>3. 推广</h3><p>算术平均数只是最小二乘法的特例，适用范围比较狭窄。而最小二乘法用途就广泛。</p>
+<p>比如温度与冰淇淋的销量：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfy3yakiqj306104kq30.jpg"></p>
+<p>看上去像是某种线性关系：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfy5hjbj7j30jh0b6aam.jpg"></p>
+<p>可以假设这种线性关系为：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfy5th1a1j303300nwed.jpg"></p>
+<p>通过最小二乘法的思想：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfy63qjt7j30gg0b63z4.jpg"></p>
+<p>上图的$i , x , y$分别为：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfy6ir0yyj308j04haa6.jpg"></p>
+<p>总误差的平方为：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfy6r7kvgj309800v3yh.jpg"></p>
+<p>不同的$a,b$会导致不同的$\epsilon$，根据多元微积分的知识，当：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfy71dz5mj307h02cgln.jpg"></p>
+<p>这个时候$\epsilon$取最小值。</p>
+<p>对于$a, b$而言，上述方程组为线性方程组，用之前的数据解出来：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfy7med6kj302g01wt8m.jpg"></p>
+<p>也就是这根直线：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfy7z8enzj30gg0b6aaj.jpg"></p>
+<p>其实，还可以假设：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfy8bpn2zj304h00pgli.jpg"></p>
+<p>在这个假设下，可以根据最小二乘法，算出$a,b,c​$，得到下面这根红色的二次曲线：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfy9glykkj30kz0b6t9f.jpg"></p>
+<p>同一组数据，选择不同的$f(x)$，通过最小二乘法可以得到不一样的拟合曲线（<a target="_blank" rel="noopener" href="https://de.wikipedia.org/wiki/Methode_der_kleinsten_Quadrate">出处</a>）：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfyaflpodj30ci09q3zc.jpg"></p>
+<p>不同的数据，更可以选择不同的$f(x)$，通过最小二乘法可以得到不一样的拟合曲线：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfyaqyvhcj30dw08vgma.jpg"></p>
+<p>$f(x)$也不能选择任意的函数，还是有一些讲究的，这里就不介绍了。</p>
+<h3 id="4-最小二乘法与正态分布"><a href="#4-最小二乘法与正态分布" class="headerlink" title="4. 最小二乘法与正态分布"></a>4. 最小二乘法与正态分布</h3><p>我们对勒让德的猜测，即最小二乘法，仍然抱有怀疑，万一这个猜测是错误的怎么办？</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfybc6d0kj30ad0db3zl.jpg"></p>
+<p>数学王子高斯（1777－1855）也像我们一样心存怀疑。</p>
+<p>高斯换了一个思考框架，通过概率统计那一套来思考。</p>
+<p>让我们回到最初测量线段长度的问题。高斯想，通过测量得到了这些值：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfyblyvdzj306104x3yk.jpg"></p>
+<p>每次的测量值$x_i$都和线段长度的真值$x$之间存在一个误差：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfybw5o9hj302h00jglh.jpg"></p>
+<p>这些误差最终会形成一个概率分布，只是现在不知道误差的概率分布是什么。假设概率密度函数为：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfyc6zduwj300w00n3yd.jpg"></p>
+<p>再假设一个联合概率密度函数，这样方便把所有的测量数据利用起来：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfycj999aj308z021q2y.jpg"></p>
+<p>讲到这里，有些同学可能已经看出来了上面似然函数了（关于似然函数以及马上要讲到的极大似然估计，可以参考“<a target="_blank" rel="noopener" href="https://www.matongxue.com/madocs/447.html">如何理解极大似然估计法？</a>”）。</p>
+<p>因为$L(x)$是关于$x$的函数，并且也是一个概率密度函数（下面分布图形是随便画的）：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfyd1zyfej30cz0b6weo.jpg"></p>
+<p>根据极大似然估计的思想，概率最大的最应该出现（既然都出现了，而我又不是“天选之才”，那么自然不会是发生了小概率事件），也就是应该取到下面这点：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfydeqdo7j30cz0b6mxe.jpg"></p>
+<p>当下面这个式子成立时，取得最大值：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfye68c9jj302r018dfq.jpg"></p>
+<p>然后高斯想，最小二乘法给出的答案是：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfyedsvw0j307d0143yg.jpg"></p>
+<p>如果最小二乘法是对的，那么$x = \overline { x }$时应该取得最大值，即：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfyeni3lgj303o018q2u.jpg"></p>
+<p>好，现在可以来解这个微分方程了。最终得到：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfyf9a2tij304e01k3yf.jpg"></p>
+<p>这是什么？这就是正态分布啊。</p>
+<p>并且这还是一个充要条件：</p>
+<p><img src="https://private-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/006tNbRwgy1fyfyfl9smnj307701k0so.jpg"></p>
+<p>也就是说，如果误差的分布是正态分布，那么最小二乘法得到的就是最有可能的值。</p>
+<p>那么误差的分布是正态分布吗？</p>
+<p>我们相信，误差是由于随机的、无数的、独立的、多个因素造成的，比如之前提到的：</p>
+<ul>
+<li>不同厂家的尺子的生产精度不同</li>
+<li>尺子材质不同，热胀冷缩不一样</li>
+<li>测量的时候心情起伏不定</li>
+<li>……</li>
+</ul>
+<p>那么根据中心极限定理（参考“<a target="_blank" rel="noopener" href="https://www.matongxue.com/madocs/589.html">为什么正态分布如此常见？</a>”），误差的分布就应该是正态分布。</p>
+<p>因为高斯的努力，才真正奠定了最小二乘法的重要地位。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%9C%80%E5%B0%8F%E4%BA%8C%E4%B9%98%E6%B3%95/" rel="tag"># 最小二乘法</a>
+              <a href="/tags/%E6%9C%80%E5%A4%A7%E4%BC%BC%E7%84%B6%E4%BC%B0%E8%AE%A1/" rel="tag"># 最大似然估计</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2018/12/15/%E7%AE%80%E5%8D%95%E8%A1%A8%E8%BE%BE%E5%BC%8F%E8%BF%90%E7%AE%97/" rel="prev" title="简单表达式运算">
+                  <i class="fa fa-chevron-left"></i> 简单表达式运算
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2018/12/30/gradle%E4%BE%9D%E8%B5%96%E8%A7%A3%E6%9E%90%E4%B8%8E%E6%9B%B4%E6%96%B0/" rel="next" title="gradle依赖解析与更新">
+                  gradle依赖解析与更新 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">shield</span>
+</div>
+  <div class="powered-by">تطبيق الموقع <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>
